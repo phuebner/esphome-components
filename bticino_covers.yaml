@@ -1,5 +1,8 @@
+substitutions:
+  name: "bticino-covers"
+
 esphome:
-  name: bticino-covers
+  name: $name
 
 external_components:
   - source: components
@@ -45,37 +48,39 @@ light:
     num_leds: 1
     name: "NeoPixel"
 
+bticino_bus:
+
 cover:
   - platform: bticino_cover
     name: "Door"
     address: 0x74
     open_duration: 59sec
     close_duration: 59sec
-  - platform: bticino_cover
-    name: "Street"
-    address: 0x75
-    open_duration: 59sec
-    close_duration: 59sec
-  - platform: bticino_cover
-    name: "Terrace"
-    address: 0x64
-    open_duration: 59sec
-    close_duration: 59sec
-  - platform: bticino_cover
-    name: "Terrace Door"
-    address: 0x65
-    open_duration: 59sec
-    close_duration: 59sec
-  - platform: bticino_cover
-    name: "Bedroom"
-    address: 0x76
-    open_duration: 59sec
-    close_duration: 59sec
+  # - platform: bticino_cover
+  #   name: "Street"
+  #   address: 0x75
+  #   open_duration: 59sec
+  #   close_duration: 59sec
+  # - platform: bticino_cover
+  #   name: "Terrace"
+  #   address: 0x64
+  #   open_duration: 59sec
+  #   close_duration: 59sec
+  # - platform: bticino_cover
+  #   name: "Terrace Door"
+  #   address: 0x65
+  #   open_duration: 59sec
+  #   close_duration: 59sec
+  # - platform: bticino_cover
+  #   name: "Bedroom"
+  #   address: 0x76
+  #   open_duration: 59sec
+  #   close_duration: 59sec
 
 sensor:
   - platform: uptime
-    name: "$name Uptime"
+    name: "$name uptime"
     device_class: duration
 
   - platform: wifi_signal
-    name: "$name WiFi Signal"
+    name: "$name wifi signal"

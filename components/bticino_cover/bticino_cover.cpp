@@ -25,12 +25,12 @@ static const char CMD2_STOP = 0x0a;
 using namespace esphome::cover;
 
 void BticinoCover::setup() {
-  Serial1.begin(9600, SERIAL_8N1, 16, 5);
-  pinMode(16, INPUT_PULLDOWN);  // disable the pullup that is enabled by the driver
-  WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_EN);    // Enable IRDA mode}
-  WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_DPLX);  // Enable IRDA Duplex
-  // mode} WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_RX_INV);  // Enable IRDA
-  // Duplex mode}
+  // Serial1.begin(9600, SERIAL_8N1, 16, 5);
+  // pinMode(16, INPUT_PULLDOWN);  // disable the pullup that is enabled by the driver
+  // WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_EN);    // Enable IRDA mode}
+  // WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_DPLX);  // Enable IRDA Duplex
+  // // mode} WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_RX_INV);  // Enable IRDA
+  // // Duplex mode}
 
   auto restore = this->restore_state_();
   if (restore.has_value()) {
@@ -43,50 +43,51 @@ void BticinoCover::setup() {
 void BticinoCover::loop() {
   const uint32_t now = millis();
 
-  // Monitor bus to catch commands sent by other sources (e.g. push buttons)
-  if (Serial1.available()) {
-    char c = Serial1.read();
-    static char buffer[10];
-    static int i = 0;
-    if (c == START_BYTE) {
-      i = 0;
-      buffer[i++] = c;
-    } else if (i > 0 && i < 9) {
-      buffer[i++] = c;
-      if (c == STOP_BYTE) {
-        buffer[i] = '\0';
-        if (i >= 4) {
-          if ((buffer[1] == this->address_ &&
-               (now - this->start_dir_time_) > 500) || /* Normal addrss call and not self-triggered*/
-              (buffer[1] == ADDRESS_ROOM_CALL && buffer[2] == ((this->address_ >> 4) & 0x0F)) || /* Room call*/
-              buffer[1] == ADDRESS_GENERAL_CALL) {                                               /* General call */
-            ESP_LOGD("bticino", "Received byte sequence: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x, 0x%02x", buffer[0],
-                     buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
+  // // Monitor bus to catch commands sent by other sources (e.g. push buttons)
+  // if (Serial1.available()) {
+  //   char c = Serial1.read();
+  //   static char buffer[10];
+  //   static int i = 0;
+  //   if (c == START_BYTE) {
+  //     i = 0;
+  //     buffer[i++] = c;
+  //   } else if (i > 0 && i < 9) {
+  //     buffer[i++] = c;
+  //     if (c == STOP_BYTE) {
+  //       buffer[i] = '\0';
+  //       if (i >= 4) {
+  //         if ((buffer[1] == this->address_ &&
+  //              (now - this->start_dir_time_) > 500) || /* Normal addrss call and not self-triggered*/
+  //             (buffer[1] == ADDRESS_ROOM_CALL && buffer[2] == ((this->address_ >> 4) & 0x0F)) || /* Room call*/
+  //             buffer[1] == ADDRESS_GENERAL_CALL) {                                               /* General call */
+  //           ESP_LOGD("bticino", "Received byte sequence: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x, 0x%02x",
+  //           buffer[0],
+  //                    buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
 
-            switch (buffer[4]) {
-              case CMD2_UP:
-                this->target_position_ = COVER_OPEN;
-                this->externally_triggered_ = true;
-                start_direction_(COVER_OPERATION_OPENING);
-                break;
-              case CMD2_DOWN:
-                this->target_position_ = COVER_CLOSED;
-                this->externally_triggered_ = true;
-                start_direction_(COVER_OPERATION_CLOSING);
-                break;
-              case CMD2_STOP:
-                this->externally_triggered_ = true;
-                start_direction_(COVER_OPERATION_IDLE);
-                break;
-              default:
-                break;
-            }
-          }
-          i = 0;
-        }
-      }
-    }
-  }
+  //           switch (buffer[4]) {
+  //             case CMD2_UP:
+  //               this->target_position_ = COVER_OPEN;
+  //               this->externally_triggered_ = true;
+  //               start_direction_(COVER_OPERATION_OPENING);
+  //               break;
+  //             case CMD2_DOWN:
+  //               this->target_position_ = COVER_CLOSED;
+  //               this->externally_triggered_ = true;
+  //               start_direction_(COVER_OPERATION_CLOSING);
+  //               break;
+  //             case CMD2_STOP:
+  //               this->externally_triggered_ = true;
+  //               start_direction_(COVER_OPERATION_IDLE);
+  //               break;
+  //             default:
+  //               break;
+  //           }
+  //         }
+  //         i = 0;
+  //       }
+  //     }
+  //   }
+  // }
 
   if (this->current_operation == COVER_OPERATION_IDLE)
     return;
@@ -168,10 +169,9 @@ void BticinoCover::control(const cover::CoverCall &call) {
   }
 }
 
-void BticinoCover::sendSCSCommand(esphome::cover::CoverOperation op) {
-  ESP_LOGD("bticino", "Sending command");
-  WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_TX_EN);  // enable UART_IRDA_TX_EN
+void BticinoCover::on_bus_receive(const std::vector<uint8_t> &data) {}
 
+void BticinoCover::sendSCSCommand(esphome::cover::CoverOperation op) {
   unsigned char cmd2 = 0x00;
 
   switch (op) {
@@ -193,14 +193,8 @@ void BticinoCover::sendSCSCommand(esphome::cover::CoverOperation op) {
   unsigned char fullCommand[sizeof(command) + 3];
   _buildCommand(command, sizeof(command), fullCommand);
 
-  ESP_LOGD("bticino", "Command: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x, 0x%02x", fullCommand[0], fullCommand[1],
-           fullCommand[2], fullCommand[3], fullCommand[4], fullCommand[5], fullCommand[6]);
-  Serial1.write(fullCommand, sizeof(fullCommand));
-  // Serial1.write('A');
-  Serial1.flush(true);
-  WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) & ~UART_IRDA_TX_EN);  // disable
-                                                                                           // UART_IRDA_TX_EN
-  delay(80);  // Delay needed to not have conflicts with the relay messages on the SCS bus
+  std::vector<uint8_t> payload((uint8_t *) fullCommand, (uint8_t *) fullCommand + sizeof(fullCommand));
+  this->send_raw(payload);
 }
 
 bool BticinoCover::is_at_target_() const {

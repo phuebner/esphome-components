@@ -2,29 +2,18 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/cover/cover.h"
+#include "../bticino_bus/bticino_bus.h"
 
 namespace esphome {
 namespace bticino {
 
-class BticinoCommand {
- private:
-  uint8_t Address;
-  uint8_t Room;
-  uint8_t Action;
-  uint8_t Direction;
-
- public:
-  BticinoCommand(uint8_t Address, uint8_t Room, uint8_t Action, uint8_t Direction);
-};
-
-class BticinoCover : public cover::Cover, public Component {
+class BticinoCover : public cover::Cover, public Component, public bticino::BticinoDevice {
  public:
   void setup() override;
   void loop() override;
   void dump_config() override;
   float get_setup_priority() const override;
 
-  void set_address(uint8_t address) { this->address_ = address; }
   void set_open_duration(uint32_t open_duration) { this->open_duration_ = open_duration; }
   void set_close_duration(uint32_t close_duration) { this->close_duration_ = close_duration; }
   void set_assumed_state(bool value) { this->assumed_state_ = value; }
@@ -33,12 +22,11 @@ class BticinoCover : public cover::Cover, public Component {
 
  protected:
   void control(const cover::CoverCall &call) override;
-
+  void on_bus_receive(const std::vector<uint8_t> &data) override;
   bool is_at_target_() const;
   void start_direction_(cover::CoverOperation dir);
   void recompute_position_();
 
-  uint8_t address_;
   uint32_t open_duration_;
   uint32_t close_duration_;
   bool assumed_state_{false};
