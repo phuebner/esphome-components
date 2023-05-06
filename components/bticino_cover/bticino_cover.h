@@ -22,7 +22,7 @@ class BticinoCover : public cover::Cover, public Component, public bticino::Btic
 
  protected:
   void control(const cover::CoverCall &call) override;
-  void on_bus_receive(const std::vector<uint8_t> &data) override;
+  void on_bus_receive(uint8_t function, uint8_t command) override;
   bool is_at_target_() const;
   void start_direction_(cover::CoverOperation dir);
   void recompute_position_();
@@ -41,8 +41,6 @@ class BticinoCover : public cover::Cover, public Component, public bticino::Btic
   cover::CoverOperation last_operation_{cover::COVER_OPERATION_OPENING};
 
  private:
-  unsigned char _calculateChecksum(unsigned char *byteArray, int size);
-  void _buildCommand(unsigned char *byteArray, int size, unsigned char *output);
   void sendSCSCommand(esphome::cover::CoverOperation op);
 };
 

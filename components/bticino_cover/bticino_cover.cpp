@@ -9,29 +9,13 @@ namespace bticino {
 
 static const char *TAG = "bticino.cover";
 
-static const char START_BYTE = 0xA8;
-static const char STOP_BYTE = 0xA3;
-
-static const char ADDRESS_GENERAL_CALL = 0xB1;
-static const char ADDRESS_ROOM_CALL = 0xB3;
-static const char ADDRESS_RELAY_CALL = 0xB8;
-
-static const char CMD_BLIND = 0x12;
-
-static const char CMD2_UP = 0x09;
-static const char CMD2_DOWN = 0x08;
-static const char CMD2_STOP = 0x0a;
+static const uint8_t COMMAND_UP = 0x09;
+static const uint8_t COMMAND_DOWN = 0x08;
+static const uint8_t COMMAND_STOP = 0x0a;
 
 using namespace esphome::cover;
 
 void BticinoCover::setup() {
-  // Serial1.begin(9600, SERIAL_8N1, 16, 5);
-  // pinMode(16, INPUT_PULLDOWN);  // disable the pullup that is enabled by the driver
-  // WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_EN);    // Enable IRDA mode}
-  // WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_DPLX);  // Enable IRDA Duplex
-  // // mode} WRITE_PERI_REG(UART_CONF0_REG(1), READ_PERI_REG(UART_CONF0_REG(1)) | UART_IRDA_RX_INV);  // Enable IRDA
-  // // Duplex mode}
-
   auto restore = this->restore_state_();
   if (restore.has_value()) {
     restore->apply(this);
@@ -42,52 +26,6 @@ void BticinoCover::setup() {
 
 void BticinoCover::loop() {
   const uint32_t now = millis();
-
-  // // Monitor bus to catch commands sent by other sources (e.g. push buttons)
-  // if (Serial1.available()) {
-  //   char c = Serial1.read();
-  //   static char buffer[10];
-  //   static int i = 0;
-  //   if (c == START_BYTE) {
-  //     i = 0;
-  //     buffer[i++] = c;
-  //   } else if (i > 0 && i < 9) {
-  //     buffer[i++] = c;
-  //     if (c == STOP_BYTE) {
-  //       buffer[i] = '\0';
-  //       if (i >= 4) {
-  //         if ((buffer[1] == this->address_ &&
-  //              (now - this->start_dir_time_) > 500) || /* Normal addrss call and not self-triggered*/
-  //             (buffer[1] == ADDRESS_ROOM_CALL && buffer[2] == ((this->address_ >> 4) & 0x0F)) || /* Room call*/
-  //             buffer[1] == ADDRESS_GENERAL_CALL) {                                               /* General call */
-  //           ESP_LOGD("bticino", "Received byte sequence: 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x, 0x%02x",
-  //           buffer[0],
-  //                    buffer[1], buffer[2], buffer[3], buffer[4], buffer[5], buffer[6]);
-
-  //           switch (buffer[4]) {
-  //             case CMD2_UP:
-  //               this->target_position_ = COVER_OPEN;
-  //               this->externally_triggered_ = true;
-  //               start_direction_(COVER_OPERATION_OPENING);
-  //               break;
-  //             case CMD2_DOWN:
-  //               this->target_position_ = COVER_CLOSED;
-  //               this->externally_triggered_ = true;
-  //               start_direction_(COVER_OPERATION_CLOSING);
-  //               break;
-  //             case CMD2_STOP:
-  //               this->externally_triggered_ = true;
-  //               start_direction_(COVER_OPERATION_IDLE);
-  //               break;
-  //             default:
-  //               break;
-  //           }
-  //         }
-  //         i = 0;
-  //       }
-  //     }
-  //   }
-  // }
 
   if (this->current_operation == COVER_OPERATION_IDLE)
     return;
@@ -129,28 +67,10 @@ CoverTraits BticinoCover::get_traits() {
   return traits;
 }
 
-unsigned char BticinoCover::_calculateChecksum(unsigned char *byteArray, int size) {
-  unsigned char checksum = 0;
-  for (int i = 0; i < size; ++i) {
-    checksum ^= byteArray[i];
-  }
-  return checksum;
-}
 
-void BticinoCover::_buildCommand(unsigned char *byteArray, int size, unsigned char *output) {
-  unsigned char checksum = _calculateChecksum(byteArray, size);
-
-  unsigned char newByteArray[size + 3];
-  output[0] = START_BYTE;
-  for (int i = 0; i < size; ++i) {
-    output[i + 1] = byteArray[i];
-  }
-  output[size + 1] = checksum;
-  output[size + 2] = STOP_BYTE;
-}
 
 void BticinoCover::control(const cover::CoverCall &call) {
-  unsigned char cmd2 = 0x00;
+  unsigned char command = 0x00;
   if (call.get_stop()) {
     this->externally_triggered_ = false;
     this->start_direction_(COVER_OPERATION_IDLE);
@@ -169,32 +89,48 @@ void BticinoCover::control(const cover::CoverCall &call) {
   }
 }
 
-void BticinoCover::on_bus_receive(const std::vector<uint8_t> &data) {}
-
-void BticinoCover::sendSCSCommand(esphome::cover::CoverOperation op) {
-  unsigned char cmd2 = 0x00;
-
-  switch (op) {
-    case COVER_OPERATION_OPENING:
-      cmd2 = CMD2_UP;
+void BticinoCover::on_bus_receive(uint8_t function, uint8_t command) {
+  switch (command) {
+    case COMMAND_UP:
+      this->target_position_ = COVER_OPEN;
+      this->externally_triggered_ = true;
+      start_direction_(COVER_OPERATION_OPENING);
       break;
-    case COVER_OPERATION_CLOSING:
-      cmd2 = CMD2_DOWN;
+    case COMMAND_DOWN:
+      this->target_position_ = COVER_CLOSED;
+      this->externally_triggered_ = true;
+      start_direction_(COVER_OPERATION_CLOSING);
       break;
-    case COVER_OPERATION_IDLE:
-      cmd2 = CMD2_STOP;
+    case COMMAND_STOP:
+      this->externally_triggered_ = true;
+      start_direction_(COVER_OPERATION_IDLE);
       break;
     default:
       break;
   }
+}
 
-  unsigned char command[] = {this->address_, 0x00, CMD_BLIND, cmd2};
+void BticinoCover::sendSCSCommand(esphome::cover::CoverOperation op) {
+  unsigned char command = 0x00;
 
-  unsigned char fullCommand[sizeof(command) + 3];
-  _buildCommand(command, sizeof(command), fullCommand);
+  switch (op) {
+    case COVER_OPERATION_OPENING:
+      command = COMMAND_UP;
+      break;
+    case COVER_OPERATION_CLOSING:
+      command = COMMAND_DOWN;
+      break;
+    case COVER_OPERATION_IDLE:
+      command = COMMAND_STOP;
+      break;
+    default:
+      break;
+  }
+  // Check if we have a valid command
+  if (command == 0x00)
+    return;  // do nothing
 
-  std::vector<uint8_t> payload((uint8_t *) fullCommand, (uint8_t *) fullCommand + sizeof(fullCommand));
-  this->send_raw(payload);
+  this->send(this->address_, 0x00, FUNCTION_COVER, command);
 }
 
 bool BticinoCover::is_at_target_() const {
