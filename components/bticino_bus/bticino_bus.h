@@ -4,6 +4,7 @@
 #include "esphome/core/component.h"
 
 #include <vector>
+#include <list>
 
 namespace esphome {
 namespace bticino {
@@ -29,21 +30,32 @@ class BticinoBus : public Component {
   void setup() override;
   void loop() override;
   void dump_config() override;
+  float get_setup_priority() const override;
 
   void register_device(BticinoDevice *device) { this->devices_.push_back(device); }
 
   bool parse_bticino_byte_(uint8_t byte);
 
   void send(uint8_t address, uint8_t destination, uint8_t function, uint8_t command);
-  void send_raw(const std::vector<uint8_t> &payload);
 
  protected:
+  void send_next_();
+  void queue_send_(const std::vector<uint8_t> &payload);
+  void send_raw_(const std::vector<uint8_t> &payload);
   uint8_t calculate_checksum_(const uint8_t *byteArray, uint8_t length);
+  std::vector<uint8_t> relay_command_(const std::vector<uint8_t> &payload);
 
+  /// Holds the time in ms that should be waited for between individual sends
+  uint8_t send_throttle_{80};
   uint32_t last_rx_time_{0};
   uint32_t last_tx_time_{0};
   std::vector<uint8_t> last_tx_buffer_;
-  uint8_t retry_counter_{0};
+  uint8_t retry_counter_{4};
+  uint8_t max_retries_{4};
+
+  /// @brief Hold the pending request to be sent
+  std::list<std::vector<uint8_t>> send_queue_;
+
   std::vector<uint8_t> rx_buffer_;
   std::vector<BticinoDevice *> devices_;
 };
@@ -58,24 +70,12 @@ class BticinoDevice {
   void send(uint8_t address, uint8_t destination, uint8_t function, uint8_t command) {
     this->parent_->send(address, destination, function, command);
   }
-  void send_raw(const std::vector<uint8_t> &payload) { this->parent_->send_raw(payload); }
 
  protected:
   friend BticinoBus;
 
   BticinoBus *parent_;
   uint8_t address_;
-};
-
-class BticinoCommand {
- private:
-  uint8_t Address;
-  uint8_t Room;
-  uint8_t Action;
-  uint8_t Direction;
-
- public:
-  BticinoCommand(uint8_t Address, uint8_t Room, uint8_t Action, uint8_t Direction);
 };
 
 }  // namespace bticino

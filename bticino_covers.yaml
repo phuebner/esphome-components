@@ -14,7 +14,7 @@ esp32:
 
 # Enable logging
 logger:
-  level: VERBOSE
+  level: DEBUG
 
 # Enable Home Assistant API
 api:
@@ -57,26 +57,31 @@ cover:
     address: 0x74
     open_duration: 59sec
     close_duration: 59sec
-  # - platform: bticino_cover
-  #   name: "Street"
-  #   address: 0x75
-  #   open_duration: 59sec
-  #   close_duration: 59sec
-  # - platform: bticino_cover
-  #   name: "Terrace"
-  #   address: 0x64
-  #   open_duration: 59sec
-  #   close_duration: 59sec
-  # - platform: bticino_cover
-  #   name: "Terrace Door"
-  #   address: 0x65
-  #   open_duration: 59sec
-  #   close_duration: 59sec
-  # - platform: bticino_cover
-  #   name: "Bedroom"
-  #   address: 0x76
-  #   open_duration: 59sec
-  #   close_duration: 59sec
+    tilt_duration: 1.5sec
+  - platform: bticino_cover
+    name: "Street"
+    address: 0x75
+    open_duration: 59sec
+    close_duration: 59sec
+    tilt_duration: 1.5sec
+  - platform: bticino_cover
+    name: "Terrace"
+    address: 0x65
+    open_duration: 59sec
+    close_duration: 59sec
+    tilt_duration: 1.5sec
+  - platform: bticino_cover
+    name: "Terrace Door"
+    address: 0x64
+    open_duration: 59sec
+    close_duration: 59sec
+    tilt_duration: 1.5sec
+  - platform: bticino_cover
+    name: "Bedroom"
+    address: 0x76
+    open_duration: 59sec
+    close_duration: 59sec
+    tilt_duration: 1.5sec
 
 sensor:
   - platform: uptime

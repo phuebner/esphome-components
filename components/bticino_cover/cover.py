@@ -12,6 +12,8 @@ from esphome.const import (
 
 AUTO_LOAD = ["bticino_bus"]
 
+CONF_TILT_DURATION = "tilt_duration"
+
 bticino_ns = cg.esphome_ns.namespace("bticino")
 BticinoCover = bticino_ns.class_(
     "BticinoCover", cover.Cover, cg.Component, bticino_bus.BticinoDevice
@@ -23,6 +25,9 @@ CONFIG_SCHEMA = (
             cv.GenerateID(): cv.declare_id(BticinoCover),
             cv.Required(CONF_OPEN_DURATION): cv.positive_time_period_milliseconds,
             cv.Required(CONF_CLOSE_DURATION): cv.positive_time_period_milliseconds,
+            cv.Optional(
+                CONF_TILT_DURATION, default="1s"
+            ): cv.positive_time_period_milliseconds,
             cv.Optional(CONF_ASSUMED_STATE, default=True): cv.boolean,
         }
     )
@@ -39,4 +44,5 @@ def to_code(config):
 
     cg.add(var.set_open_duration(config[CONF_OPEN_DURATION]))
     cg.add(var.set_close_duration(config[CONF_CLOSE_DURATION]))
+    cg.add(var.set_tilt_duration(config[CONF_TILT_DURATION]))
     cg.add(var.set_assumed_state(config[CONF_ASSUMED_STATE]))

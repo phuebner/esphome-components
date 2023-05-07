@@ -16,6 +16,7 @@ class BticinoCover : public cover::Cover, public Component, public bticino::Btic
 
   void set_open_duration(uint32_t open_duration) { this->open_duration_ = open_duration; }
   void set_close_duration(uint32_t close_duration) { this->close_duration_ = close_duration; }
+  void set_tilt_duration(uint32_t tilt_duration) { this->tilt_duration_ = tilt_duration; }
   void set_assumed_state(bool value) { this->assumed_state_ = value; }
 
   cover::CoverTraits get_traits() override;
@@ -29,12 +30,14 @@ class BticinoCover : public cover::Cover, public Component, public bticino::Btic
 
   uint32_t open_duration_;
   uint32_t close_duration_;
+  uint32_t tilt_duration_{1000};
   bool assumed_state_{false};
 
   uint32_t last_recompute_time_{0};
   uint32_t start_dir_time_{0};
   uint32_t last_publish_time_{0};
   float target_position_{0};
+  float target_tilt_{0};
 
   bool externally_triggered_{false};
 
