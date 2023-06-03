@@ -46,7 +46,7 @@ class BticinoBus : public Component {
   std::vector<uint8_t> relay_command_(const std::vector<uint8_t> &payload);
 
   /// Holds the time in ms that should be waited for between individual sends
-  uint8_t send_throttle_{80};
+  uint8_t send_throttle_{120};
   uint32_t last_rx_time_{0};
   uint32_t last_tx_time_{0};
   std::vector<uint8_t> last_tx_buffer_;
