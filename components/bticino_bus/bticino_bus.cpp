@@ -114,7 +114,7 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
   }
 
   // Ignore all relay commands for a set period
-  if (now - this->last_tx_time_ < 300 && address == ADDRESS_GENERAL_CALL) {
+  if (now - this->last_tx_time_ < 300 && address == ADDRESS_RELAY_CALL) {
     ESP_LOGW(TAG, "Strange relay command ignored");
     return false;
   }
