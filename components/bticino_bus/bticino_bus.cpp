@@ -113,6 +113,12 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
     return false;
   }
 
+  // Ignore false relay commands of a command that we just sent
+  if (now - this->last_tx_time_ < 300 && this->rx_buffer_ == this->strange_relay_command_(this->last_tx_buffer_)) {
+    ESP_LOGW(TAG, "Strange relay of sent command ignored");
+    return false;
+  }
+
   if (computed_checksum != received_checksum) {
     ESP_LOGW(TAG, "RX package checksum check failed! 0x%02x != 0x%02x", computed_checksum, received_checksum);
     return false;
@@ -152,6 +158,16 @@ std::vector<uint8_t> BticinoBus::relay_command_(const std::vector<uint8_t> &pack
   uint8_t address = package[1];
   uint8_t function = package[3];
   uint8_t command = package[4];
+
+  uint8_t checksum = ADDRESS_RELAY_CALL ^ address ^ function ^ command;
+  std::vector<uint8_t> relay_package{START_BYTE, ADDRESS_RELAY_CALL, address, function, command, checksum, STOP_BYTE};
+  return relay_package;
+}
+
+std::vector<uint8_t> BticinoBus::strange_relay_command_(const std::vector<uint8_t> &package) {
+  uint8_t address = package[1];
+  uint8_t function = package[3];
+  uint8_t command = 0x0a;
 
   uint8_t checksum = ADDRESS_RELAY_CALL ^ address ^ function ^ command;
   std::vector<uint8_t> relay_package{START_BYTE, ADDRESS_RELAY_CALL, address, function, command, checksum, STOP_BYTE};
