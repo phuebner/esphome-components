@@ -44,7 +44,6 @@ class BticinoBus : public Component {
   void send_raw_(const std::vector<uint8_t> &payload);
   uint8_t calculate_checksum_(const uint8_t *byteArray, uint8_t length);
   std::vector<uint8_t> relay_command_(const std::vector<uint8_t> &payload);
-  std::vector<uint8_t> strange_relay_command_(const std::vector<uint8_t> &payload);
 
   /// Holds the time in ms that should be waited for between individual sends
   uint8_t send_throttle_{120};
