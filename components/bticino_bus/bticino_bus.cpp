@@ -119,6 +119,12 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
     return false;
   }
 
+  // Ignore all relay commands for handled received commands
+  if (now - this->last_rx_handled_time_ < 600 && address == ADDRESS_RELAY_CALL) {
+    ESP_LOGW(TAG, "Relay of handled command ignored");
+    return false;
+  }
+
   if (computed_checksum != received_checksum) {
     ESP_LOGW(TAG, "RX package checksum check failed! 0x%02x != 0x%02x", computed_checksum, received_checksum);
     return false;
@@ -139,6 +145,7 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
     if (address == device->address_ || address == ADDRESS_RELAY_CALL && destination == device->address_ ||
         address == ADDRESS_ROOM_CALL && destination == ((device->address_ >> 4) & 0x0F) ||
         address == ADDRESS_GENERAL_CALL) {
+      last_rx_handled_time_ = millis();
       device->on_bus_receive(function_code, command_code);
     }
   }

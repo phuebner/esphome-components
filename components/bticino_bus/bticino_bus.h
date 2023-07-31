@@ -48,6 +48,7 @@ class BticinoBus : public Component {
   /// Holds the time in ms that should be waited for between individual sends
   uint8_t send_throttle_{120};
   uint32_t last_rx_time_{0};
+  uint32_t last_rx_handled_time_{0};
   uint32_t last_tx_time_{0};
   std::vector<uint8_t> last_tx_buffer_;
   uint8_t retry_counter_{4};
