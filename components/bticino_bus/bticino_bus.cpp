@@ -33,6 +33,11 @@ void BticinoBus::loop() {
     send_next_();
   }
 
+  // This should not be necessary. But just in case
+  if (this->send_queue_.size() == 0 && this->retry_counter_ < 4) {
+    this->retry_counter_ = 4;
+  }
+
   uint8_t timeout_counter = 8;  // timout so that our loop is not locking up
   while (Serial1.available() && timeout_counter > 0) {
     uint8_t byte;
