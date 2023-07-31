@@ -102,7 +102,6 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
 
   ESP_LOGD(TAG, "Command received: %s", hex_str);
 
-
   // Ignore "copies" of commands that we just sent.
   if (now - this->last_tx_time_ < 300 && this->rx_buffer_ == this->last_tx_buffer_) {
     ESP_LOGV(TAG, "Copy of sent command ignored");
@@ -165,7 +164,17 @@ void BticinoBus::send(uint8_t address, uint8_t destination, uint8_t function, ui
   this->queue_send_(package);
 }
 
-void BticinoBus::queue_send_(const std::vector<uint8_t> &package) { send_queue_.push_back(package); }
+void BticinoBus::queue_send_(const std::vector<uint8_t> &package) {
+  // Build logging string
+  char hex_str[package.size() * 3 + 1] = {0};
+  for (int i = 0; i < package.size(); i++) {
+    sprintf(&hex_str[i * 3], "%02x ", package.at(i));
+  }
+  ESP_LOGD(TAG, "Add command %s to queue", hex_str);
+
+  send_queue_.push_back(package);
+  ESP_LOGD(TAG, "%i commands queued", send_queue_.size());
+}
 
 void BticinoBus::send_next_() {
   int32_t last_send = millis() - this->last_tx_time_;
@@ -176,6 +185,7 @@ void BticinoBus::send_next_() {
       this->send_raw_(package);
     } else {
       // Command either successfully sent or reached maximum retries
+      ESP_LOGD(TAG, "Remove send command from queue", pos);
       this->retry_counter_ = this->max_retries_;
       send_queue_.pop_front();
     }

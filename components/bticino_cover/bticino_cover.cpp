@@ -163,9 +163,10 @@ void BticinoCover::sendSCSCommand(esphome::cover::CoverOperation op) {
       break;
   }
   // Check if we have a valid command
-  if (command == 0x00)
+  if (command == 0x00) {
+    ESP_LOGW(TAG, "Unknown cover operation");
     return;  // do nothing
-
+  }
   this->send(this->address_, 0x00, FUNCTION_COVER, command);
 }
 
