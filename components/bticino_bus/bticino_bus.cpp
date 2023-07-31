@@ -185,7 +185,7 @@ void BticinoBus::send_next_() {
       this->send_raw_(package);
     } else {
       // Command either successfully sent or reached maximum retries
-      ESP_LOGD(TAG, "Remove send command from queue", pos);
+      ESP_LOGD(TAG, "Remove send command from queue");
       this->retry_counter_ = this->max_retries_;
       send_queue_.pop_front();
     }
