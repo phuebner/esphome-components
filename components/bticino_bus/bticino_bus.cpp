@@ -37,6 +37,7 @@ void BticinoBus::loop() {
   while (Serial1.available() && timeout_counter > 0) {
     uint8_t byte;
     byte = Serial1.read();
+    this->last_rx_time_ = now;
     if (this->parse_bticino_byte_(byte)) {
       this->last_rx_time_ = now;
     } else {
@@ -70,7 +71,7 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
         break;
       case ACK_BYTE:
         // Received an acknowledge
-        ESP_LOGV(TAG, "Bticino received acknowledge");
+        ESP_LOGD(TAG, "Bticino received acknowledge");
         this->retry_counter_ = 0;  // no need to retry sending a package
         return false;
         break;
@@ -92,6 +93,15 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
   uint8_t received_checksum = raw[5];
 
   uint8_t computed_checksum = calculate_checksum_(&raw[1], 4);
+
+  // Build logging string
+  char hex_str[this->rx_buffer_.size() * 3 + 1] = {0};
+  for (int i = 0; i < this->rx_buffer_.size(); i++) {
+    sprintf(&hex_str[i * 3], "%02x ", this->rx_buffer_.at(i));
+  }
+
+  ESP_LOGD(TAG, "Command received: %s", hex_str);
+
 
   // Ignore "copies" of commands that we just sent.
   if (now - this->last_tx_time_ < 300 && this->rx_buffer_ == this->last_tx_buffer_) {
@@ -118,14 +128,6 @@ bool BticinoBus::parse_bticino_byte_(uint8_t byte) {
     ESP_LOGW(TAG, "RX package unknown function code: 0x%02x ", function_code);
     return false;
   }
-
-  // Build logging string
-  char hex_str[this->rx_buffer_.size() * 3 + 1] = {0};
-  for (int i = 0; i < this->rx_buffer_.size(); i++) {
-    sprintf(&hex_str[i * 3], "%02x ", this->rx_buffer_.at(i));
-  }
-
-  ESP_LOGD(TAG, "Command received: %s", hex_str);
 
   // Notify devices of the received package
   for (auto *device : this->devices_) {
@@ -172,7 +174,6 @@ void BticinoBus::send_next_() {
 
     if (this->retry_counter_ > 0) {
       this->send_raw_(package);
-      this->last_tx_time_ = millis();
     } else {
       // Command either successfully sent or reached maximum retries
       this->retry_counter_ = this->max_retries_;
